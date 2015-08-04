@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\User;
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Redirect;
 use Validator;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
@@ -61,5 +63,26 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
         ]);
+    }
+
+    protected function store()
+    {
+        $data = Input::all();
+        if ($this->validator($data)->fails()) {
+            return back()->withInput();
+        }
+        $user = $this->create($data);
+        $user->save();
+        auth()->loginUsingId($user->id);
+        return redirect('/');
+    }
+
+    protected function login()
+    {
+        if (auth()->attempt(array('email' => Input::get('email'), 'password' => Input::get('password')), true) ||
+            auth()->attempt(array('name' => Input::get('email'), 'password' => Input::get('password')), true)) {
+            return Redirect::intended('/');
+        }
+        return back()->withInput()->with('message', 'Неверное имя пользователя и/или пароль!');
     }
 }
